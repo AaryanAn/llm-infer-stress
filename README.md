@@ -238,6 +238,54 @@ ps aux | grep -E "(streamlit|ollama)" | grep -v grep
 brew services list | grep ollama
 ```
 
+## Storage Management
+
+### 📊 **Storage Usage Analysis**
+This project can use significant storage space:
+
+```bash
+# Check current usage
+du -sh ~/.ollama ~/.cache/huggingface
+```
+
+**Typical Storage Usage:**
+- **Ollama Models**: 1-10GB per model (DeepSeek: ~3.8GB, Llama: ~2GB)
+- **Hugging Face Cache**: 500MB-5GB (GPT-2: ~500MB, larger models: 1-5GB)
+- **Test Results**: 1-100MB (JSON files with test results)
+- **Total**: Can easily reach 10-20GB+
+
+### 🧹 **Storage Cleanup**
+```bash
+# Interactive cleanup tool
+./cleanup_storage.sh
+```
+
+**Manual Cleanup Options:**
+
+```bash
+# Remove specific Ollama models
+ollama list                    # See what's installed
+ollama rm deepseek-coder:6.7b # Remove specific model
+
+# Clear all Ollama models (frees ~5GB)
+ollama list --format json | jq -r '.[].name' | xargs -I {} ollama rm {}
+
+# Clear Hugging Face cache (frees ~2GB)
+rm -rf ~/.cache/huggingface/*
+
+# Clear test results
+rm -rf ./results/*
+
+# Clear logs  
+rm -rf ./logs/*
+```
+
+**💡 Smart Storage Tips:**
+- Models auto-download when needed
+- Keep only your most-used models
+- Clean up test results regularly
+- Use the cleanup script before long trips/storage space issues
+
 ## Development
 
 ### Adding New Providers
