@@ -288,6 +288,41 @@ rm -rf ./logs/*
 
 ## Development
 
+### 🚀 **Development Quick Start**
+
+**Recommended development workflow:**
+
+```bash
+# 1. Navigate to project directory
+cd /path/to/llm-infer-stress
+
+# 2. Activate virtual environment  
+source .venv-llm-infer/bin/activate
+
+# 3. Start all services
+./start_services.sh
+
+# 4. Start development dashboard (auto-reload enabled)
+streamlit run app.py --server.runOnSave true
+```
+
+### 📋 **Development Patterns**
+
+**For daily development:**
+- Use `./start_services.sh` to start fresh
+- Use `streamlit run app.py --server.runOnSave true` for auto-reload
+- Test components with `python test_mock.py`
+- Use `./shutdown_services.sh` when done (includes storage cleanup)
+
+**For component testing:**
+```bash
+python test_mock.py          # Test mock client
+python test_local_models.py  # Test HuggingFace models
+python benchmark.py          # Test CLI interface
+```
+
+**See [DEV_WORKFLOW.md](DEV_WORKFLOW.md) for complete development guide.**
+
 ### Adding New Providers
 
 To add support for new LLM providers:
