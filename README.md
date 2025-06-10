@@ -290,21 +290,39 @@ rm -rf ./logs/*
 
 ### 🚀 **Development Quick Start**
 
-**Recommended development workflow:**
-
+#### Option 1: One-Command Startup (Recommended)
 ```bash
-# 1. Navigate to project directory
+# Navigate to project and run everything at once
 cd /path/to/llm-infer-stress
+./start_dev.sh
+```
+**That's it!** This script:
+- ✅ Starts Ollama service
+- ✅ Activates virtual environment
+- ✅ Starts Streamlit with auto-reload
+- ✅ Opens browser at http://localhost:8501
 
-# 2. Activate virtual environment  
-source .venv-llm-infer/bin/activate
-
-# 3. Start all services
+#### Option 2: Step-by-Step Control
+```bash
+# 1. Start background services only
 ./start_services.sh
 
-# 4. Start development dashboard (auto-reload enabled)
+# 2. Then choose one:
+./temp_dev_start.sh                          # Auto-generated helper script
+# OR manually:
+source .venv-llm-infer/bin/activate
 streamlit run app.py --server.runOnSave true
 ```
+
+#### Option 3: Manual Commands (For Advanced Users)
+```bash
+# Individual control of each service
+brew services start ollama
+source .venv-llm-infer/bin/activate  
+streamlit run app.py --server.runOnSave true --server.headless false
+```
+
+**💡 Daily Workflow:** Just run `./start_dev.sh` for effortless development!
 
 ### 📋 **Development Patterns**
 

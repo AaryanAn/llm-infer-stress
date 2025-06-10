@@ -58,6 +58,17 @@ service-account*.json
 .DS_Store
 Thumbs.db
 
+# Cursor IDE
+.cursor/
+.cursorrules
+cursor.log
+.cursor-tutor/
+.cursor-settings/
+.cursor-workspace/
+*.cursor-*
+.cursor-chat/
+.cursor-sessions/
+
 # Jupyter Notebooks
 .ipynb_checkpoints
 *.ipynb
