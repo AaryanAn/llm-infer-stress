@@ -1,0 +1,146 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv-llm-infer/
+llmvenv/
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.production
+.env.staging
+*.key
+.secrets/
+
+# API Keys (CRITICAL - Never commit these!)
+*api_key*
+*API_KEY*
+*.pem
+*.p8
+credentials.json
+service-account*.json
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+*.ipynb
+
+# Model Files & Caches (These can be HUGE!)
+models/
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.pkl
+*.joblib
+.cache/
+huggingface_hub/
+transformers_cache/
+torch/hub/
+
+# Hugging Face Cache (can be 10GB+)
+~/.cache/huggingface/
+.cache/huggingface/
+**/transformers_cache/
+**/huggingface_hub/
+
+# Test Results & Outputs
+results/
+*.json
+*.csv
+*.log
+logs/
+outputs/
+experiments/
+
+# Streamlit
+.streamlit/
+
+# Prometheus & Grafana
+prometheus_data/
+grafana_data/
+*.db
+
+# System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary Files
+tmp/
+temp/
+.tmp/
+*.tmp
+*.temp
+
+# Local Configuration
+config.local.yaml
+local_config.py
+settings.local.py
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Coverage Reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+cover/
+
+# Ollama Models (Optional - these can be re-downloaded)
+# ~/.ollama/models/
+# Comment above line if you want to keep downloaded models in git
+
+# Large files that shouldn't be in git
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.dmg
+*.iso 

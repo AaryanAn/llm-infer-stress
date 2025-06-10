@@ -1,0 +1,13 @@
+coding_guidelines:
+  enforce_type_hints: true
+  max_function_length: 50
+  comment_above_logic_blocks: true
+  docstrings_required: true
+  prefer_async_when_possible: true
+  limit_global_variables: true
+  default_error_handling: try/except/log
+
+ai_assist:
+  auto_suggest_tests: true
+  suggest_refactor_on_long_methods: true
+  warn_on_hardcoded_keys: true
