@@ -197,6 +197,47 @@ Results are automatically saved to the `results/` directory in JSON or CSV forma
    ```
    Solution: Ensure you're running from the project root and the virtual environment is activated.
 
+## Service Management
+
+### 🚀 **Starting Services**
+```bash
+# Easy startup (starts Ollama service)
+./start_services.sh
+
+# Manual startup
+brew services start ollama
+streamlit run app.py
+```
+
+### 🛑 **Shutting Down Services** (Important!)
+Before turning off your computer or when done testing:
+
+```bash
+# Clean shutdown of all services
+./shutdown_services.sh
+```
+
+This will:
+- Stop all Streamlit processes
+- Stop Ollama service  
+- Kill any remaining background processes
+- Free up system resources
+
+**Why this matters:**
+- Ollama can use 6GB+ of RAM for models
+- Multiple Streamlit processes consume resources
+- Clean shutdown prevents corrupted model states
+- Ensures proper system shutdown
+
+### 🔄 **Service Status Check**
+```bash
+# Check what's running
+ps aux | grep -E "(streamlit|ollama)" | grep -v grep
+
+# Check Ollama specifically
+brew services list | grep ollama
+```
+
 ## Development
 
 ### Adding New Providers
