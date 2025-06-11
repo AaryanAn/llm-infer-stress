@@ -1,6 +1,89 @@
-# LLM Inference Stress Testing MVP
+# LLM Inference Stress Testing Platform
 
-A comprehensive benchmarking tool for stress-testing large language model (LLM) inference across multiple providers. This tool measures response times, error rates, throughput, and provides Prometheus-compatible metrics.
+![Python](https://img.shields.io/badge/python-3.9+-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Last Commit](https://img.shields.io/github/last-commit/yourusername/llm-infer-stress)
+![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)
+
+**A comprehensive, production-ready platform for benchmarking and stress-testing Large Language Model (LLM) inference systems.** This tool helps organizations evaluate LLM performance, reliability, and cost-effectiveness across different providers, deployment scenarios, and usage patterns. With support for both cloud APIs (OpenAI) and local models (Llama, DeepSeek, Hugging Face), plus zero-cost mock testing, it provides enterprise-grade metrics collection, real-time monitoring, and professional reporting capabilities.
+
+## 🎯 Key Use Cases
+
+• **LLM Provider Evaluation** - Compare performance and costs across OpenAI, local models, and other providers  
+• **Infrastructure Capacity Planning** - Determine throughput requirements and scaling needs for production deployments  
+• **Performance Regression Testing** - Validate that model updates and changes maintain expected response times and quality  
+• **Cost Optimization Analysis** - Analyze token usage patterns and optimize API spending with detailed cost breakdowns  
+• **Zero-Cost Development** - Prototype and demonstrate LLM applications using mock clients before API investment  
+
+## 📚 Table of Contents
+
+- [MVP Status](#-mvp-status)
+- [Tech Stack](#-tech-stack)
+- [Quick Start](#-quick-start)
+- [Features](#features)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+  - [Web Dashboard](#web-dashboard-recommended)
+  - [Command Line Interface](#command-line-interface)
+- [Project Structure](#project-structure)
+- [Metrics](#metrics)
+- [Example Results](#example-results)
+- [Service Management](#service-management)
+- [Storage Management](#storage-management)
+- [Development](#development)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+
+## 🚧 MVP Status
+
+This is a **Minimum Viable Product (MVP)** designed to demonstrate core LLM stress testing capabilities. While fully functional and production-ready for testing scenarios, it focuses on essential features rather than comprehensive enterprise deployment. Perfect for evaluation, prototyping, and small-to-medium scale testing workloads.
+
+**Current Status:** ✅ Core functionality complete, 🔄 Local model integration, 📋 Additional providers planned
+
+## 🛠 Tech Stack
+
+**Core Framework**
+- **Python 3.9+** - Primary development language
+- **Streamlit** - Interactive web dashboard and real-time visualization
+- **FastAPI** - High-performance API endpoints (planned)
+
+**LLM Integration**
+- **OpenAI API** - Cloud-based model access with retry logic and rate limiting
+- **Transformers** - Hugging Face local model support (DeepSeek, Llama)
+- **Ollama** - Local model serving and management
+
+**Monitoring & Metrics**
+- **Prometheus** - Enterprise-grade metrics collection and time-series data
+- **Plotly** - Interactive charts and real-time performance visualization
+- **JSON/CSV Export** - Flexible data export for external analysis
+
+**Infrastructure**
+- **asyncio** - Concurrent request handling and stress testing
+- **Ray** - Distributed computing support (planned)
+- **Docker** - Containerized deployment options (planned)
+
+## ⚡ Quick Start
+
+**Option 1: One-Command Demo (Recommended)**
+```bash
+git clone <repository-url> && cd llm-infer-stress
+./start_dev.sh
+# Opens http://localhost:8501 with full dashboard
+```
+
+**Option 2: Zero-Cost Mock Testing**
+```bash
+python test_mock.py
+# Runs complete stress test simulation without API costs
+```
+
+**Option 3: CLI Benchmark**
+```bash
+export OPENAI_API_KEY="your_key_here"
+python benchmark.py --requests 10 --concurrent 2
+# Runs actual LLM stress test with results
+```
 
 ## Features
 
