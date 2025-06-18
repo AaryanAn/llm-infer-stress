@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 if [ ! -f "app.py" ]; then
     echo -e "${RED}❌ Error: app.py not found${NC}"
     echo "Please run this script from the project root directory:"
-    echo "cd /Users/aaryananand/Documents/Personal/Main_Project/llm-infer-stress"
+    echo "cd /path/to/llm-infer-stress"
     exit 1
 fi
 

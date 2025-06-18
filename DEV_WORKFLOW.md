@@ -6,7 +6,7 @@
 
 ```bash
 # 1. Navigate to project
-cd /Users/aaryananand/Documents/Personal/Main_Project/llm-infer-stress
+cd /path/to/llm-infer-stress
 
 # 2. Activate virtual environment
 source .venv-llm-infer/bin/activate
