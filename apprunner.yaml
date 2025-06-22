@@ -3,14 +3,12 @@ runtime: python311
 build:
   commands:
     build:
-      - pip3 install -r requirements.txt
-      - pip3 install streamlit>=1.30.0 --target /app/.local/lib/python3.11/site-packages
+      - python3 -m venv /app/venv
+      - /app/venv/bin/pip install -r requirements.txt
+      - /app/venv/bin/pip install streamlit>=1.30.0
 run:
   runtime-version: 3.11
-  env:
-    - name: PYTHONPATH
-      value: /app/.local/lib/python3.11/site-packages:/usr/local/lib/python3.11/site-packages
-  command: python3 -m streamlit run app.py --server.port 8501 --server.address 0.0.0.0 --server.headless
+  command: /app/venv/bin/python -m streamlit run app.py --server.port 8501 --server.address 0.0.0.0 --server.headless
   network:
     port: 8501
     env: PORT 
