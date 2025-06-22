@@ -41,13 +41,38 @@ llmvenv/
 *.key
 .secrets/
 
-# API Keys (CRITICAL - Never commit these!)
+# API Keys & Credentials (CRITICAL - Never commit these!)
 *api_key*
 *API_KEY*
+*secret*
+*SECRET*
+*token*
+*TOKEN*
 *.pem
 *.p8
+*.key
+*.crt
+*.csr
 credentials.json
 service-account*.json
+.aws/credentials
+.aws/config
+aws-credentials*
+*credential*
+
+# AWS Specific Security
+.aws/
+aws-setup/credentials*
+aws-setup/.env*
+*.tfstate
+*.tfstate.backup
+terraform.tfvars
+.terraform/
+AWSCLIV2.pkg
+
+# Docker Security
+.docker/config.json
+docker-compose.override.yml
 
 # IDE & Editor
 .vscode/
@@ -140,7 +165,6 @@ local_config.py
 settings.local.py
 
 # Docker
-.dockerignore
 docker-compose.override.yml
 
 # Coverage Reports

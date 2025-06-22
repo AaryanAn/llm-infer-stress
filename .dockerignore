@@ -1,0 +1,125 @@
+# Git and Version Control
+.git
+.gitignore
+.gitattributes
+
+# Documentation (not needed in container)
+*.md
+docs/
+README*
+CHANGELOG*
+LICENSE*
+
+# Development and IDE Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+.cursor/
+
+# Python Development
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+.tox/
+.mypy_cache/
+
+# Virtual Environments (NEVER include these!)
+.env
+.venv/
+.venv-*/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Secrets and Credentials (CRITICAL!)
+*.key
+*.pem
+*.p8
+*.crt
+*.csr
+*secret*
+*credential*
+*token*
+.aws/
+aws-credentials*
+.secrets/
+.env*
+
+# AWS Setup Files (contain account info)
+aws-setup/
+AWSCLIV2.pkg
+*.tfstate*
+terraform.tfvars
+
+# Test Results and Logs
+results/
+logs/
+*.log
+outputs/
+experiments/
+test-results/
+
+# Temporary Files
+tmp/
+temp/
+.tmp/
+*.tmp
+*.temp
+
+# Cache Directories
+.cache/
+.npm/
+node_modules/
+.streamlit/
+
+# Model Files (can be huge!)
+models/
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.pkl
+*.joblib
+huggingface_hub/
+transformers_cache/
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# Development Scripts
+deploy-*.sh
+start_services.sh
+shutdown_services.sh
+test.py
+
+# Personal Files
+*.pdf
+*.resume
+AaryanAnandResume.pdf
+
+# Large Archives
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db 
