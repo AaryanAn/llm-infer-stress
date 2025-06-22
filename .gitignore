@@ -95,12 +95,9 @@ cursor.log
 .cursor-sessions/
 cursor_instructions.md
 
-# Planning & Development Files (Keep Private)
-PROJECT_PROGRESS.md
-DEV_WORKFLOW.md
-LOCAL_MODELS_SUCCESS.md
-PORTFOLIO_MATERIALS.md
-DEMO_SCRIPT.md
+# Documentation Files (Keep Private - except README)
+*.md
+!README.md
 
 # Jupyter Notebooks
 .ipynb_checkpoints
