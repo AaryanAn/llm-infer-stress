@@ -5,7 +5,7 @@ build:
     build:
       - echo Build started on `date`
       - echo Building the Docker image...
-      - docker build -t llm-infer-stress .
+      - docker build -f docker/Dockerfile -t llm-infer-stress .
       - echo Build completed on `date`
 run:
   runtime-version: latest
