@@ -15,6 +15,7 @@ from llm_infer.clients.huggingface_client import LocalModelClient
 from llm_infer.clients.ollama_client import OllamaClient
 from llm_infer.core.prompt_generator import PromptGenerator, PromptType
 from llm_infer.core.stress_test_runner import StressTestRunner, StressTestConfig
+from llm_infer.core.cost_tracker import CostTracker, CostTier
 from llm_infer.metrics.prometheus_metrics import PrometheusMetrics
 from llm_infer.utils import setup_logging, validate_environment_variables
 
@@ -49,6 +50,9 @@ if "metrics" not in st.session_state:
 
 if "prompt_generator" not in st.session_state:
     st.session_state.prompt_generator = PromptGenerator()
+
+if "cost_tracker" not in st.session_state:
+    st.session_state.cost_tracker = CostTracker(CostTier.DEVELOPMENT)
 
 
 def check_environment(model_provider: str = "api") -> bool:
@@ -93,7 +97,7 @@ def create_client(model: str, model_type: str = "api"):
 def run_stress_test(client, config: StressTestConfig) -> None:
     """Run a stress test and update session state."""
     try:
-        runner = StressTestRunner(client, st.session_state.prompt_generator)
+        runner = StressTestRunner(client, st.session_state.prompt_generator, st.session_state.cost_tracker)
         
         # Show progress bar
         progress_bar = st.progress(0)
@@ -131,7 +135,7 @@ def display_test_results(results) -> None:
     st.subheader("Test Results")
     
     # Summary metrics
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
         st.metric("Success Rate", f"{results.success_rate:.1%}")
@@ -144,6 +148,10 @@ def display_test_results(results) -> None:
     
     with col4:
         st.metric("Total Tokens", f"{results.total_tokens:,}")
+    
+    with col5:
+        cost_color = "inverse" if results.total_cost == 0 else "normal"
+        st.metric("Total Cost", f"${results.total_cost:.4f}", delta=None, delta_color=cost_color)
     
     # Latency distribution chart
     if results.individual_results:
@@ -297,6 +305,47 @@ def main():
     num_requests = st.sidebar.slider("Number of Requests", 1, 100, 10)
     concurrent_requests = st.sidebar.slider("Concurrent Requests", 1, 10, 1)
     
+    # Budget configuration
+    st.sidebar.subheader("💰 Cost & Budget")
+    budget_tier = st.sidebar.selectbox(
+        "Budget Tier",
+        options=[tier.value for tier in CostTier],
+        format_func=lambda x: {
+            "development": "🧪 Development ($5/day, $1/test)",
+            "demo": "🎯 Demo ($25/day, $10/test)",
+            "production": "🚀 Production ($100/day, $50/test)"
+        }[x]
+    )
+    
+    # Update cost tracker if tier changed
+    selected_tier = CostTier(budget_tier)
+    if st.session_state.cost_tracker.budget_config.tier != selected_tier:
+        st.session_state.cost_tracker = CostTracker(selected_tier)
+    
+    # Show current budget status
+    budget_status = st.session_state.cost_tracker._get_budget_status()
+    
+    with st.sidebar.expander("📊 Budget Status"):
+        st.progress(budget_status["daily_percentage"] / 100)
+        st.write(f"Daily: ${budget_status['daily_used']:.2f} / ${budget_status['daily_limit']:.2f}")
+        st.write(f"Remaining: ${budget_status['daily_remaining']:.2f}")
+    
+    # Cost estimation for planned test
+    if selected_model and model_provider == "api":
+        estimated_cost = st.session_state.cost_tracker.estimate_test_cost(
+            selected_model, num_requests, 50, 100
+        )
+        can_afford, reason = st.session_state.cost_tracker.can_afford_test(
+            selected_model, num_requests, 50, 100
+        )
+        
+        if can_afford:
+            st.sidebar.success(f"✅ Estimated cost: ${estimated_cost:.4f}")
+        else:
+            st.sidebar.error(f"❌ {reason}")
+    else:
+        st.sidebar.info("💚 Free testing with local/mock models")
+    
     # Test name
     test_name = st.sidebar.text_input("Test Name (optional)")
     
@@ -323,14 +372,15 @@ def main():
                 custom_prompts=[custom_prompt] if custom_prompt else None,
                 save_results=save_results,
                 output_format=output_format,
-                test_name=test_name if test_name else None
+                test_name=test_name if test_name else None,
+                budget_tier=selected_tier
             )
             
             # Run the test
             run_stress_test(client, config)
     
     # Main content area
-    tab1, tab2, tab3 = st.tabs(["📊 Current Test", "📈 Historical Results", "🔧 Metrics"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📊 Current Test", "📈 Historical Results", "💰 Cost Analysis", "🔧 Metrics"])
     
     with tab1:
         if not st.session_state.test_results:
@@ -383,6 +433,113 @@ def main():
             st.info("No test results yet. Run some tests to see historical data!")
     
     with tab3:
+        st.subheader("💰 Cost Analysis & Optimization")
+        
+        # Cost summary
+        cost_summary = st.session_state.cost_tracker.get_cost_summary(days=30)
+        
+        if cost_summary["total_requests"] > 0:
+            # Cost overview metrics
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric("30-Day Total", f"${cost_summary['total_cost']:.2f}")
+            
+            with col2:
+                st.metric("Avg Daily Cost", f"${cost_summary['avg_daily_cost']:.2f}")
+            
+            with col3:
+                st.metric("Total Requests", f"{cost_summary['total_requests']:,}")
+            
+            with col4:
+                st.metric("Avg Cost/Request", f"${cost_summary['avg_cost_per_request']:.4f}")
+            
+            # Model cost breakdown
+            if cost_summary["model_breakdown"]:
+                st.subheader("Cost by Model")
+                model_data = []
+                for model, stats in cost_summary["model_breakdown"].items():
+                    model_data.append({
+                        "Model": model,
+                        "Total Cost": f"${stats['cost']:.4f}",
+                        "Requests": stats['requests'],
+                        "Avg Cost/Request": f"${stats['cost']/stats['requests']:.4f}" if stats['requests'] > 0 else "$0.0000"
+                    })
+                
+                model_df = pd.DataFrame(model_data)
+                st.dataframe(model_df, use_container_width=True)
+                
+                # Cost breakdown chart
+                model_names = list(cost_summary["model_breakdown"].keys())
+                model_costs = [stats["cost"] for stats in cost_summary["model_breakdown"].values()]
+                
+                if len(model_names) > 1:
+                    fig_cost_pie = px.pie(
+                        values=model_costs,
+                        names=model_names,
+                        title="Cost Distribution by Model"
+                    )
+                    st.plotly_chart(fig_cost_pie, use_container_width=True)
+            
+            # Daily cost trend
+            if len(cost_summary["daily_costs"]) > 1:
+                st.subheader("Daily Cost Trend")
+                daily_df = pd.DataFrame([
+                    {"Date": date, "Cost": cost} 
+                    for date, cost in cost_summary["daily_costs"].items()
+                ])
+                daily_df["Date"] = pd.to_datetime(daily_df["Date"])
+                
+                fig_daily = px.line(
+                    daily_df, 
+                    x="Date", 
+                    y="Cost",
+                    title="Daily API Costs",
+                    labels={"Cost": "Cost ($)"}
+                )
+                st.plotly_chart(fig_daily, use_container_width=True)
+            
+            # Cost optimization suggestions
+            st.subheader("💡 Optimization Suggestions")
+            suggestions = st.session_state.cost_tracker.get_optimization_suggestions()
+            for suggestion in suggestions:
+                st.info(f"💡 {suggestion}")
+                
+            # Budget status details
+            st.subheader("📊 Budget Status")
+            budget_status = st.session_state.cost_tracker._get_budget_status()
+            
+            # Daily budget progress
+            st.write("**Daily Budget**")
+            progress = budget_status["daily_percentage"] / 100
+            st.progress(progress)
+            st.write(f"${budget_status['daily_used']:.2f} / ${budget_status['daily_limit']:.2f} used ({budget_status['daily_percentage']:.1f}%)")
+            
+            # Current test budget
+            st.write("**Current Test Session**")
+            test_progress = budget_status["test_percentage"] / 100
+            st.progress(test_progress)
+            st.write(f"${budget_status['test_used']:.2f} / ${budget_status['test_limit']:.2f} used ({budget_status['test_percentage']:.1f}%)")
+            
+        else:
+            st.info("No cost data yet. Run some tests with API models to see cost analysis!")
+            
+            # Show model pricing comparison
+            st.subheader("📋 Model Pricing Reference")
+            pricing_data = []
+            for model, pricing in st.session_state.cost_tracker.MODEL_PRICING.items():
+                if "mock" not in model.lower() and "local" not in model.lower():
+                    pricing_data.append({
+                        "Model": model,
+                        "Input (per 1K tokens)": f"${pricing.input_cost_per_1k:.4f}",
+                        "Output (per 1K tokens)": f"${pricing.output_cost_per_1k:.4f}",
+                        "Est. Cost (100 requests)": f"${((50 * pricing.input_cost_per_1k + 100 * pricing.output_cost_per_1k) / 1000) * 100:.2f}"
+                    })
+            
+            pricing_df = pd.DataFrame(pricing_data)
+            st.dataframe(pricing_df, use_container_width=True)
+    
+    with tab4:
         st.subheader("Prometheus Metrics")
         
         # Current metrics summary

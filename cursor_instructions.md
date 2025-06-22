@@ -102,6 +102,8 @@ Required environment variables:
 - Avoid premature abstraction
 - Default to using real APIs unless mock behavior is explicitly requested
 - Focus on metrics and real throughput — not simulated time.sleep loops
+- Make sure the progress markdown file is updated with every progress or change made
+- Do not use emojis in code unless you explicitly ask
 
 ## Immediate Next Tasks
 
@@ -109,4 +111,4 @@ Required environment variables:
 2. Add 3 static prompt types in prompt_generator.py
 3. Create stress_test_runner.py with config and results logging
 4. Add /metrics Prometheus exporter using prometheus_client
-5. Scaffold Streamlit UI for interacting with the benchmark
+5. Scaffold Streamlit UI for interacting with the benchmark 

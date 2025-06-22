@@ -14,6 +14,7 @@ from typing import List, Dict, Any, Optional, Union, Callable
 
 from ..clients.openai_client import OpenAIClient
 from .prompt_generator import PromptGenerator, PromptType
+from .cost_tracker import CostTracker, CostTier
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,8 @@ class StressTestConfig:
     output_format: str = "json"  # "json" or "csv"
     output_dir: str = "results"
     test_name: Optional[str] = None
+    budget_tier: CostTier = CostTier.DEVELOPMENT
+    max_cost: Optional[float] = None  # Override budget limits
 
 
 @dataclass
@@ -52,20 +55,26 @@ class StressTestResults:
     requests_per_second: float
     errors: Dict[str, int]
     individual_results: List[Dict[str, Any]]
+    total_cost: float = 0.0
+    avg_cost_per_request: float = 0.0
+    cost_breakdown: Dict[str, Any] = None
 
 
 class StressTestRunner:
     """Runner for LLM inference stress tests."""
     
-    def __init__(self, client: OpenAIClient, prompt_generator: PromptGenerator) -> None:
+    def __init__(self, client: OpenAIClient, prompt_generator: PromptGenerator, 
+                 cost_tracker: Optional[CostTracker] = None) -> None:
         """Initialize the stress test runner.
         
         Args:
             client: LLM client to test (currently supports OpenAIClient).
             prompt_generator: Generator for test prompts.
+            cost_tracker: Optional cost tracker for budget management.
         """
         self.client = client
         self.prompt_generator = prompt_generator
+        self.cost_tracker = cost_tracker
         logger.info("Initialized StressTestRunner")
     
     def run_stress_test(self, config: StressTestConfig) -> StressTestResults:
@@ -79,6 +88,23 @@ class StressTestRunner:
         """
         logger.info(f"Starting stress test with {config.num_requests} requests, "
                    f"{config.concurrent_requests} concurrent")
+        
+        # Initialize cost tracker if not provided
+        if self.cost_tracker is None:
+            self.cost_tracker = CostTracker(config.budget_tier)
+        
+        # Check budget before starting test
+        model_name = getattr(self.client, 'model', 'unknown')
+        can_afford, reason = self.cost_tracker.can_afford_test(
+            model_name, config.num_requests, 50, 100
+        )
+        
+        if not can_afford and config.max_cost is None:
+            logger.error(f"Test blocked by budget: {reason}")
+            raise ValueError(f"Budget exceeded: {reason}")
+        
+        # Start cost tracking session
+        self.cost_tracker.start_test()
         
         start_time = datetime.now()
         start_timestamp = time.time()
@@ -101,13 +127,38 @@ class StressTestRunner:
             results, config, start_time, end_time, total_duration
         )
         
+        # Calculate and add cost information
+        if self.cost_tracker:
+            total_cost = 0.0
+            for result in results:
+                if result.get('success', False):
+                    input_tokens = result.get('input_tokens', 50)
+                    output_tokens = result.get('token_count', 100) - input_tokens
+                    
+                    cost = self.cost_tracker.calculate_request_cost(
+                        model_name, input_tokens, output_tokens
+                    )
+                    self.cost_tracker.record_test_cost(cost, stress_test_results.test_name)
+                    total_cost += cost.total_cost
+            
+            stress_test_results.total_cost = total_cost
+            stress_test_results.avg_cost_per_request = (
+                total_cost / stress_test_results.total_requests 
+                if stress_test_results.total_requests > 0 else 0
+            )
+            stress_test_results.cost_breakdown = self.cost_tracker.get_cost_summary(days=1)
+            
+            # Save cost history
+            self.cost_tracker.save_cost_history()
+        
         # Save results if requested
         if config.save_results:
             self._save_results(stress_test_results, config)
         
         logger.info(f"Stress test completed: {stress_test_results.successful_requests}/"
                    f"{stress_test_results.total_requests} successful, "
-                   f"avg latency: {stress_test_results.avg_latency:.2f}s")
+                   f"avg latency: {stress_test_results.avg_latency:.2f}s, "
+                   f"total cost: ${stress_test_results.total_cost:.4f}")
         
         return stress_test_results
     
