@@ -186,8 +186,5 @@ cover/
 *.iso
 
 # Personal Files (Keep Private)
-AaryanAnandResume.pdf
 *.pdf
-
-# Personal Files (Keep Private)
 *.resume 

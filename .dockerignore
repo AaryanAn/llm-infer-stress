@@ -4,7 +4,6 @@
 .gitattributes
 
 # Documentation (not needed in container)
-*.md
 docs/
 README*
 CHANGELOG*
@@ -56,7 +55,6 @@ aws-credentials*
 
 # AWS Setup Files (contain account info)
 aws-setup/
-AWSCLIV2.pkg
 *.tfstate*
 terraform.tfvars
 
@@ -94,20 +92,16 @@ huggingface_hub/
 transformers_cache/
 
 # Docker
-docker-compose*.yml
-Dockerfile*
+docker/
 .dockerignore
 
 # Development Scripts
-deploy-*.sh
-start_services.sh
-shutdown_services.sh
+scripts/
 test.py
 
 # Personal Files
 *.pdf
 *.resume
-AaryanAnandResume.pdf
 
 # Large Archives
 *.zip

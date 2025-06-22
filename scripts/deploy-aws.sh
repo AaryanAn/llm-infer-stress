@@ -53,7 +53,7 @@ case $choice in
         aws ecr create-repository --repository-name $ECR_REPO --region $AWS_REGION || true
         
         echo "Building Docker image..."
-        docker build -t $ECR_REPO .
+        docker build -f docker/Dockerfile -t $ECR_REPO .
         
         echo "Logging into ECR..."
         aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
@@ -77,7 +77,7 @@ case $choice in
         echo "   sudo usermod -a -G docker ec2-user"
         echo ""
         echo "3. Copy this project to EC2 and run:"
-        echo "   docker build -t llm-infer-stress ."
+        echo "   docker build -f docker/Dockerfile -t llm-infer-stress ."
         echo "   docker run -d -p 80:8501 llm-infer-stress"
         ;;
         
