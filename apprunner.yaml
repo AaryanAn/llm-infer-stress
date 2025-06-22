@@ -1,12 +1,10 @@
 version: 1.0
-runtime: docker
+runtime: python3
 build:
   commands:
     build:
-      - echo "Building Docker image..."
-      - docker build -f docker/Dockerfile -t llm-infer-stress .
+      - pip install -r requirements.txt
 run:
-  runtime-version: latest
   command: streamlit run app.py --server.port=8501 --server.address=0.0.0.0 --server.headless=true
   network:
     port: 8501
