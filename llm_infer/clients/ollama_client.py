@@ -4,6 +4,7 @@ import logging
 import time
 import requests
 import json
+import subprocess
 from typing import Dict, Any, List, Optional
 
 from llm_infer.utils import setup_logging
@@ -18,7 +19,8 @@ class OllamaClient:
     def __init__(self, 
                  model_name: str = "llama2:7b", 
                  base_url: str = "http://localhost:11434",
-                 timeout: int = 60):
+                 timeout: int = 60,
+                 auto_pull: bool = True):
         """
         Initialize the Ollama client.
         
@@ -26,10 +28,12 @@ class OllamaClient:
             model_name: Name of the Ollama model to use (e.g., "llama2:7b", "codellama:7b")
             base_url: Base URL for Ollama API
             timeout: Request timeout in seconds
+            auto_pull: Whether to automatically pull missing models
         """
         self.model_name = model_name
         self.base_url = base_url.rstrip('/')
         self.timeout = timeout
+        self.auto_pull = auto_pull
         self._check_connection()
     
     def _check_connection(self) -> None:
@@ -38,7 +42,7 @@ class OllamaClient:
             response = requests.get(f"{self.base_url}/api/tags", timeout=5)
             if response.status_code == 200:
                 logger.info(f"Successfully connected to Ollama at {self.base_url}")
-                self._check_model_availability()
+                self._ensure_model_available()
             else:
                 logger.warning(f"Ollama API returned status {response.status_code}")
         except requests.ConnectionError:
@@ -48,8 +52,8 @@ class OllamaClient:
             logger.error(f"Error checking Ollama connection: {e}")
             raise
     
-    def _check_model_availability(self) -> None:
-        """Check if the specified model is available."""
+    def _ensure_model_available(self) -> None:
+        """Ensure the specified model is available, pull if necessary."""
         try:
             response = requests.get(f"{self.base_url}/api/tags", timeout=5)
             if response.status_code == 200:
@@ -57,12 +61,82 @@ class OllamaClient:
                 available_models = [model['name'] for model in models_data.get('models', [])]
                 
                 if self.model_name in available_models:
-                    logger.info(f"Model {self.model_name} is available")
+                    logger.info(f"✅ Model {self.model_name} is available")
+                    return
+                
+                # Model not found - try to pull it
+                logger.warning(f"❌ Model {self.model_name} not found. Available models: {available_models}")
+                
+                if self.auto_pull:
+                    logger.info(f"🔄 Attempting to pull model {self.model_name}...")
+                    success = self._pull_model()
+                    if not success:
+                        # Suggest alternative models
+                        self._suggest_alternatives(available_models)
                 else:
-                    logger.warning(f"Model {self.model_name} not found. Available models: {available_models}")
-                    logger.info(f"To pull the model, run: ollama pull {self.model_name}")
+                    logger.info(f"💡 To pull the model manually, run: ollama pull {self.model_name}")
+                    self._suggest_alternatives(available_models)
+                    
         except Exception as e:
             logger.warning(f"Could not check model availability: {e}")
+    
+    def _pull_model(self) -> bool:
+        """
+        Attempt to pull the missing model.
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            logger.info(f"🚀 Pulling model {self.model_name}... This may take a few minutes.")
+            
+            # Use subprocess to run ollama pull command
+            result = subprocess.run(
+                ["ollama", "pull", self.model_name],
+                capture_output=True,
+                text=True,
+                timeout=300  # 5 minute timeout
+            )
+            
+            if result.returncode == 0:
+                logger.info(f"✅ Successfully pulled model {self.model_name}")
+                return True
+            else:
+                logger.error(f"❌ Failed to pull model {self.model_name}: {result.stderr}")
+                return False
+                
+        except subprocess.TimeoutExpired:
+            logger.error(f"⏰ Timeout pulling model {self.model_name} (5 minutes)")
+            return False
+        except FileNotFoundError:
+            logger.error("❌ 'ollama' command not found. Make sure Ollama CLI is installed.")
+            return False
+        except Exception as e:
+            logger.error(f"❌ Error pulling model {self.model_name}: {e}")
+            return False
+    
+    def _suggest_alternatives(self, available_models: List[str]) -> None:
+        """Suggest alternative models based on what's available."""
+        if not available_models:
+            logger.info("💡 No models currently installed. Popular starter models:")
+            recommendations = [
+                "llama3.2:1b (fast, lightweight)",
+                "llama3.2:3b (good balance)",
+                "codellama:7b (for code generation)",
+                "mistral:7b (high quality)"
+            ]
+            for rec in recommendations:
+                logger.info(f"   - {rec}")
+            return
+        
+        # Find similar models
+        model_base = self.model_name.split(':')[0]  # e.g., "llama3.2" from "llama3.2:3b"
+        similar_models = [m for m in available_models if model_base in m]
+        
+        if similar_models:
+            logger.info(f"💡 Similar available models: {similar_models}")
+        else:
+            logger.info(f"💡 Available models: {available_models[:3]}{'...' if len(available_models) > 3 else ''}")
     
     def run_prompt(self, prompt: str) -> Dict[str, Any]:
         """
@@ -77,6 +151,12 @@ class OllamaClient:
         start_time = time.time()
         
         try:
+            # Double-check model availability before inference
+            if not self._is_model_available():
+                error_msg = f"Model {self.model_name} is not available. Please pull it first: ollama pull {self.model_name}"
+                logger.error(error_msg)
+                return self._create_error_response(error_msg, time.time() - start_time)
+            
             # Prepare the request payload
             payload = {
                 "model": self.model_name,
@@ -136,52 +216,45 @@ class OllamaClient:
             else:
                 error_msg = f"Ollama API error: {response.status_code} - {response.text}"
                 logger.error(error_msg)
-                
-                return {
-                    "response": "",
-                    "success": False,
-                    "latency": latency,
-                    "input_tokens": 0,
-                    "output_tokens": 0,
-                    "total_tokens": 0,
-                    "model": self.model_name,
-                    "error": error_msg,
-                    "metadata": {"backend": "ollama"}
-                }
+                return self._create_error_response(error_msg, latency)
                 
         except requests.Timeout:
             latency = time.time() - start_time
             error_msg = f"Request timeout after {self.timeout} seconds"
             logger.error(error_msg)
-            
-            return {
-                "response": "",
-                "success": False,
-                "latency": latency,
-                "input_tokens": 0,
-                "output_tokens": 0,
-                "total_tokens": 0,
-                "model": self.model_name,
-                "error": error_msg,
-                "metadata": {"backend": "ollama"}
-            }
+            return self._create_error_response(error_msg, latency)
             
         except Exception as e:
             latency = time.time() - start_time
             error_msg = f"Error during Ollama inference: {str(e)}"
             logger.error(error_msg)
-            
-            return {
-                "response": "",
-                "success": False,
-                "latency": latency,
-                "input_tokens": 0,
-                "output_tokens": 0,
-                "total_tokens": 0,
-                "model": self.model_name,
-                "error": error_msg,
-                "metadata": {"backend": "ollama"}
-            }
+            return self._create_error_response(error_msg, latency)
+    
+    def _is_model_available(self) -> bool:
+        """Check if the model is currently available."""
+        try:
+            response = requests.get(f"{self.base_url}/api/tags", timeout=5)
+            if response.status_code == 200:
+                models_data = response.json()
+                available_models = [model['name'] for model in models_data.get('models', [])]
+                return self.model_name in available_models
+            return False
+        except Exception:
+            return False
+    
+    def _create_error_response(self, error_msg: str, latency: float) -> Dict[str, Any]:
+        """Create a standardized error response."""
+        return {
+            "response": "",
+            "success": False,
+            "latency": latency,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "total_tokens": 0,
+            "model": self.model_name,
+            "error": error_msg,
+            "metadata": {"backend": "ollama"}
+        }
     
     def list_available_models(self) -> List[Dict[str, Any]]:
         """
@@ -200,76 +273,67 @@ class OllamaClient:
         except Exception as e:
             logger.error(f"Error listing models: {e}")
             return []
-    
+
     @staticmethod
     def get_popular_models() -> Dict[str, Dict[str, str]]:
-        """Get a list of popular Ollama models for easy selection."""
+        """Get a list of popular Ollama models with descriptions."""
         return {
-            "llama3.2:3b": {
-                "name": "Llama 3.2 3B",
-                "description": "Latest Llama 3.2 model, fast and efficient",
-                "size": "~2.0GB"
-            },
             "llama3.2:1b": {
                 "name": "Llama 3.2 1B",
-                "description": "Smallest Llama 3.2, ultra-fast inference",
-                "size": "~1.3GB"
+                "description": "Fast, lightweight model perfect for testing",
+                "size": "~1.3GB",
+                "use_case": "Quick testing, development"
             },
-            "deepseek-coder-v2:16b": {
-                "name": "DeepSeek Coder V2 16B",
-                "description": "Latest DeepSeek coding model, excellent for code",
-                "size": "~9.0GB"
+            "llama3.2:3b": {
+                "name": "Llama 3.2 3B", 
+                "description": "Good balance of speed and quality",
+                "size": "~2.0GB",
+                "use_case": "General purpose, balanced performance"
             },
-            "deepseek-coder:6.7b": {
-                "name": "DeepSeek Coder 6.7B",
-                "description": "Smaller DeepSeek coding model",
-                "size": "~3.8GB"
-            },
-            "qwen2.5:7b": {
-                "name": "Qwen 2.5 7B",
-                "description": "Alibaba's latest model, great performance",
-                "size": "~4.4GB"
-            },
-            "mistral:7b": {
-                "name": "Mistral 7B",
-                "description": "Mistral AI's popular 7B model",
-                "size": "~4.1GB"
+            "llama3.1:8b": {
+                "name": "Llama 3.1 8B",
+                "description": "High quality responses, slower inference",
+                "size": "~4.7GB",
+                "use_case": "Production quality responses"
             },
             "codellama:7b": {
                 "name": "Code Llama 7B",
-                "description": "Meta's code-specialized model",
-                "size": "~3.8GB"
+                "description": "Specialized for code generation",
+                "size": "~3.8GB",
+                "use_case": "Code completion, programming tasks"
             },
-            "llama2:7b": {
-                "name": "Llama 2 7B",
-                "description": "Meta's Llama 2 (stable, well-tested)",
-                "size": "~3.8GB"
+            "mistral:7b": {
+                "name": "Mistral 7B",
+                "description": "High performance general model",
+                "size": "~4.1GB",
+                "use_case": "General purpose, high quality"
             },
-            "phi3:3.8b": {
-                "name": "Phi-3 3.8B",
+            "phi3:mini": {
+                "name": "Phi-3 Mini",
                 "description": "Microsoft's efficient small model",
-                "size": "~2.3GB"
-            },
-            "granite-code:8b": {
-                "name": "Granite Code 8B",
-                "description": "IBM's open-source coding model",
-                "size": "~4.6GB"
+                "size": "~2.3GB",
+                "use_case": "Efficient inference, good quality"
             }
         }
-    
+
     @classmethod
     def is_ollama_available(cls, base_url: str = "http://localhost:11434") -> bool:
         """
         Check if Ollama is running and accessible.
         
         Args:
-            base_url: Ollama base URL to check
+            base_url: Base URL for Ollama API
             
         Returns:
             True if Ollama is accessible, False otherwise
         """
         try:
-            response = requests.get(f"{base_url.rstrip('/')}/api/tags", timeout=3)
+            response = requests.get(f"{base_url.rstrip('/')}/api/tags", timeout=5)
             return response.status_code == 200
-        except:
-            return False 
+        except Exception:
+            return False
+    
+    @classmethod
+    def get_quick_start_model(cls) -> str:
+        """Get the recommended model for quick start/testing."""
+        return "llama3.2:1b"  # Fast, lightweight, good for demos 
