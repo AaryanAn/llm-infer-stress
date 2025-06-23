@@ -4,7 +4,6 @@ import logging
 import os
 import sys
 from typing import Dict, Any, List, Optional
-import torch
 
 
 def setup_logging(level: int = logging.INFO) -> None:
@@ -29,17 +28,30 @@ class ModelManager:
         info = {
             "platform": sys.platform,
             "python_version": sys.version,
-            "torch_version": torch.__version__,
-            "cuda_available": torch.cuda.is_available(),
-            "mps_available": hasattr(torch.backends, 'mps') and torch.backends.mps.is_available(),
             "cpu_count": os.cpu_count(),
             "memory_gb": round(psutil.virtual_memory().total / (1024**3), 1),
             "available_memory_gb": round(psutil.virtual_memory().available / (1024**3), 1)
         }
         
-        if info["cuda_available"]:
-            info["gpu_name"] = torch.cuda.get_device_name(0)
-            info["gpu_memory_gb"] = round(torch.cuda.get_device_properties(0).total_memory / (1024**3), 1)
+        # Try to import torch safely
+        try:
+            import torch
+            info["torch_version"] = torch.__version__
+            info["cuda_available"] = torch.cuda.is_available()
+            info["mps_available"] = hasattr(torch.backends, 'mps') and torch.backends.mps.is_available()
+            
+            if info["cuda_available"]:
+                info["gpu_name"] = torch.cuda.get_device_name(0)
+                info["gpu_memory_gb"] = round(torch.cuda.get_device_properties(0).total_memory / (1024**3), 1)
+        except ImportError:
+            info["torch_version"] = "not installed"
+            info["cuda_available"] = False
+            info["mps_available"] = False
+        except Exception:
+            # PyTorch import/CUDA check failed - safe fallback
+            info["torch_version"] = "import failed"
+            info["cuda_available"] = False
+            info["mps_available"] = False
         
         return info
     
