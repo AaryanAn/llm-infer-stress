@@ -8,6 +8,6 @@ build:
       - /app/venv/bin/pip install streamlit>=1.30.0
 run:
   runtime-version: 3.11
-  command: /app/venv/bin/python -m streamlit run app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true
+  command: /app/venv/bin/python -m streamlit run app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true --server.enableCORS false --server.enableXsrfProtection false --server.enableWebsocketCompression false
   network:
     port: 8501 
