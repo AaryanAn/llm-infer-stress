@@ -4,10 +4,27 @@ import logging
 import time
 import warnings
 from typing import Dict, Any, Optional
-from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
-import torch
 
 from llm_infer.utils import setup_logging
+
+# Try to import PyTorch and transformers safely
+try:
+    import torch
+    from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+    TORCH_AVAILABLE = True
+except ImportError as e:
+    TORCH_AVAILABLE = False
+    torch = None
+    AutoTokenizer = None
+    AutoModelForCausalLM = None
+    pipeline = None
+except Exception as e:
+    # PyTorch/transformers import failed (e.g., CUDA issues on cloud)
+    TORCH_AVAILABLE = False
+    torch = None
+    AutoTokenizer = None
+    AutoModelForCausalLM = None
+    pipeline = None
 
 # Suppress specific warnings that can clutter logs
 warnings.filterwarnings("ignore", category=UserWarning, module="transformers")
@@ -28,6 +45,12 @@ class HuggingFaceClient:
             model_name: Name of the Hugging Face model to use
             max_length: Maximum length for generated responses
         """
+        if not TORCH_AVAILABLE:
+            raise RuntimeError(
+                "PyTorch and transformers are not available. "
+                "Please install them with: pip install torch transformers"
+            )
+        
         self.model_name = model_name
         self.max_length = max_length
         self.tokenizer = None
@@ -348,6 +371,8 @@ class LocalModelClient(HuggingFaceClient):
     @classmethod
     def get_recommended_model(cls) -> str:
         """Get the most compatible model for testing."""
+        if not TORCH_AVAILABLE:
+            raise RuntimeError("PyTorch not available - cannot use local models")
         return "distilgpt2"  # Best compatibility and speed
     
     @classmethod
@@ -362,6 +387,12 @@ class LocalModelClient(HuggingFaceClient):
         Returns:
             LocalModelClient instance
         """
+        if not TORCH_AVAILABLE:
+            raise RuntimeError(
+                "PyTorch and transformers are not available. "
+                "Local models require PyTorch. Please use API models instead."
+            )
+        
         if model_key not in cls.SUPPORTED_MODELS:
             available = list(cls.SUPPORTED_MODELS.keys())
             raise ValueError(f"Model {model_key} not supported. Available: {available}")
