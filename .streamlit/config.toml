@@ -7,6 +7,7 @@ enableXsrfProtection = false
 enableWebsocketCompression = false
 allowRunOnSave = false
 runOnSave = false
+baseUrlPath = ""
 
 [browser]
 gatherUsageStats = false
@@ -17,4 +18,13 @@ serverPort = 8501
 developmentMode = false
 
 [theme]
-base = "dark" 
+base = "dark"
+
+# Force disable WebSockets - use HTTP polling instead
+[client]
+toolbarMode = "minimal"
+showErrorDetails = false
+
+[runner]
+magicEnabled = false
+installTracer = false 
