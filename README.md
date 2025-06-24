@@ -152,13 +152,38 @@ llm-infer-stress/
 └── results/              # Test results & cost history
 ```
 
-## 🚀 **Future Enhancements**
+## 🚀 **Production Deployment**
 
-- **AWS Deployment** - CloudFormation templates for production deployment
+### **AWS EC2 with CI/CD Pipeline**
+Automated deployment pipeline using GitHub Actions:
+
+```bash
+# Automatic deployment on every push to main
+git push origin main
+# ✅ Runs tests and linting
+# ✅ Deploys to EC2 instance
+# ✅ Zero-downtime updates
+```
+
+**Production Features:**
+- **GitHub Actions CI/CD** - Automated testing and deployment
+- **EC2 Instance** - Scalable cloud hosting with SSH access
+- **Zero-downtime deployment** - Rolling updates without service interruption
+- **Monitoring & Health Checks** - Automated service health verification
+- **Cost-effective hosting** - Pay-per-use EC2 pricing vs expensive App Runner
+
+### **Deploy Your Own Instance**
+1. Launch EC2 instance (t3.medium recommended)
+2. Configure security groups (ports 8501, 8000, 22)
+3. Set GitHub secrets: `EC2_HOST`, `EC2_USERNAME`, `EC2_SSH_KEY`
+4. Push to main branch - automatic deployment!
+
+## 🔮 **Future Enhancements**
+
 - **Advanced Analytics** - ML-powered cost prediction and optimization
 - **Custom Models** - Support for fine-tuned and custom endpoints
 - **Team Features** - Multi-user budgets and shared dashboards
-- **CI/CD Integration** - Automated performance regression testing
+- **Auto-scaling** - Elastic infrastructure based on load
 
 ---
 
